@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NaturalsNerve · Salon Intelligence System</title>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.10/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:ital,wght@0,400;0,500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --display: 'Syne', sans-serif;
+      --mono: 'DM Mono', monospace;
+      --body: 'Outfit', sans-serif;
+      --purple: #6B2D8B;
+      --magenta: #C2185B;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #07070f; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #6B2D8B55; border-radius: 4px; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes glowPulse {
+      0%,100% { box-shadow: 0 0 18px #6B2D8B33; }
+      50%      { box-shadow: 0 0 36px #6B2D8B66; }
+    }
+    input[type=range] {
+      -webkit-appearance: none; height: 4px;
+      border-radius: 4px; background: #1e1e38; outline: none; width: 100%;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 18px; height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6B2D8B, #C2185B);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    /* ─────────────────────────────────────────────
+       DATA
+    ───────────────────────────────────────────── */
+    const MODULES = [
+      {
+        id: 1, code: "MOD-07", name: "Advanced Colour & Balayage",
+        level: "L2 → L3", stylists: 340, revLift: 18400, pct: 34,
+        payback: 23, status: "HIGH",
+        brief: "Reallocate budget aggressively to MOD-07 — at ₹18,400 average revenue lift per stylist in 90 days, this is your single highest-returning training investment across the entire portfolio. Prioritise L2 stylists in Tier-1 cities where colour service demand peaks; every 10 additional completions adds ₹1.84L to your quarterly revenue line."
+      },
+      {
+        id: 2, code: "MOD-04", name: "Bridal & Occasion Styling",
+        level: "L2 → L3", stylists: 210, revLift: 14200, pct: 26,
+        payback: 31, status: "HIGH",
+        brief: "Expand MOD-04 completions ahead of every wedding season window — the ₹14,200 lift per stylist compounds directly with occasion-driven demand spikes. Branches with 2+ MOD-04 certified stylists show 31% fewer bridal booking cancellations; target Tier-2 cities with high occasion density first for maximum return."
+      },
+      {
+        id: 3, code: "MOD-09", name: "Keratin & Smoothing Treatments",
+        level: "L1 → L2", stylists: 180, revLift: 11800, pct: 21,
+        payback: 38, status: "HIGH",
+        brief: "MOD-09 is your most cost-effective L1→L2 bridge — ₹11,800 lift with a 38-day payback makes it the best upgrade path for stylists stuck at entry level. Prioritise this for any stylist at L1 for more than 4 months; it directly reduces the revenue gap that opens when experienced staff leave."
+      },
+      {
+        id: 4, code: "MOD-02", name: "Basic Haircut & Finish",
+        level: "L1", stylists: 520, revLift: 4100, pct: 8,
+        payback: 72, status: "MED",
+        brief: "Maintain MOD-02 as mandatory onboarding baseline but avoid over-investment — at ₹4,100 lift and 72-day payback, funds are better directed to colour and treatment modules once L1 proficiency is established. Use MOD-02 completion as a gate before unlocking higher modules, not as a standalone revenue lever."
+      },
+      {
+        id: 5, code: "MOD-05", name: "Customer Consultation Skills",
+        level: "L1", stylists: 610, revLift: 2900, pct: 5,
+        payback: 89, status: "MED",
+        brief: "MOD-05 improves retention metrics more than immediate revenue — its real value shows in repeat booking rates (+14% in high-completion branches) rather than per-visit lift. Deploy it in branches with declining repeat customer scores as a retention investment, not as a primary revenue driver."
+      },
+      {
+        id: 6, code: "MOD-03", name: "Skin Care Basics",
+        level: "L1", stylists: 390, revLift: 800, pct: 1.2,
+        payback: 210, status: "LOW",
+        brief: "Reduce MOD-03 budget immediately — ₹800 lift at 210-day payback is not generating measurable revenue impact relative to its cost. Convert it to a self-paced digital format to eliminate facilitator spend, and redirect freed budget entirely to MOD-07 or MOD-09 completions this quarter."
+      },
+    ];
+
+    const BRANCHES = [
+      {
+        id: 1, name: "Branch 114", city: "Chennai", region: "South",
+        score: 84, stage: 0, rev: "+4%", complaints: "-18%",
+        training: 92, audit: 88, stylists: 12, l3: 4, revColor: "#4ade80", cColor: "#4ade80",
+        brief: "Branch 114 is your South Zone benchmark — 92% training participation and 4 L3-certified stylists are driving above-average revenue growth with complaints trending down sharply. No intervention required; designate this branch as a peer-learning site for Stage 1 and Stage 2 branches to observe operations firsthand."
+      },
+      {
+        id: 2, name: "Branch 447", city: "Coimbatore", region: "South",
+        score: 74, stage: 0, rev: "+1%", complaints: "-5%",
+        training: 80, audit: 79, stylists: 9, l3: 2, revColor: "#4ade80", cColor: "#4ade80",
+        brief: "Branch 447 is stable but leaving revenue on the table — only 2 of 9 stylists have reached L3, capping high-margin colour and bridal service capacity. Fast-track 3 eligible L2 stylists through MOD-07 this quarter; projected revenue lift of ₹55,200 with no structural changes required."
+      },
+      {
+        id: 3, name: "Branch 287", city: "Bangalore", region: "South",
+        score: 58, stage: 1, rev: "-6%", complaints: "+12%",
+        training: 61, audit: 66, stylists: 11, l3: 1, revColor: "#f87171", cColor: "#f87171",
+        brief: "Branch 287 is showing clear Stage 1 warning signals — training participation dropped 24% in 6 weeks and only 1 L3 stylist remains active, creating a skill vacuum in high-margin services. Regional manager should visit within 2 weeks: restart MOD-09 completions for 4 overdue L1 stylists and investigate the root cause of training dropout before Stage 2 is reached."
+      },
+      {
+        id: 4, name: "Branch 523", city: "Hyderabad", region: "South",
+        score: 44, stage: 2, rev: "-11%", complaints: "+28%",
+        training: 38, audit: 51, stylists: 10, l3: 0, revColor: "#f87171", cColor: "#f87171",
+        brief: "Branch 523 is in Stage 2 distress — zero L3 specialists and a 34% rise in colour cancellations are the primary drivers of an 11% monthly revenue decline. Immediate action: assign a roving L3 mentor from Branch 114 for 3 weeks, fast-track 2 L2 stylists into MOD-07, and escalate complaint resolution this week to stop further customer attrition."
+      },
+      {
+        id: 5, name: "Branch 891", city: "Coimbatore", region: "South",
+        score: 27, stage: 3, rev: "-19%", complaints: "+44%",
+        training: 18, audit: 31, stylists: 8, l3: 0, revColor: "#f87171", cColor: "#f87171",
+        brief: "Branch 891 requires emergency intervention this week — Stage 3 signals have persisted for 6 consecutive weeks with revenue down 19% MoM and zero training activity in 45 days. Regional head must personally attend: evaluate franchise owner commitment, deploy an immediate L3 transfer from Branch 114, and set a 30-day performance threshold before initiating franchise review proceedings."
+      },
+      {
+        id: 6, name: "Branch 334", city: "Madurai", region: "South",
+        score: 38, stage: 2, rev: "-13%", complaints: "+31%",
+        training: 29, audit: 44, stylists: 9, l3: 0, revColor: "#f87171", cColor: "#f87171",
+        brief: "Branch 334 entered Stage 2 after its sole L3 stylist departed 8 weeks ago with no replacement plan — client retention has dropped 22% as loyal customers follow the stylist to a competitor. Secure a permanent L3 transfer or hire within 2 weeks; deploy a weekly roving specialist from Branch 447 as an interim measure to retain premium clients while the replacement is onboarded."
+      },
+    ];
+
+    const STAGE_CFG = [
+      { label: "Healthy",     bar: "#4ade80", bg: "#052e16", text: "#4ade80", border: "#166534" },
+      { label: "Stage 1 ⚠",  bar: "#facc15", bg: "#1c1700", text: "#facc15", border: "#854d0e" },
+      { label: "Stage 2 ⚠⚠", bar: "#fb923c", bg: "#1a0e00", text: "#fb923c", border: "#9a3412" },
+      { label: "Stage 3 🔴",  bar: "#ef4444", bg: "#1c0505", text: "#f87171", border: "#991b1b" },
+    ];
+
+    const ROI_CFG = {
+      HIGH: { bg: "#052e16", text: "#4ade80", border: "#166534" },
+      MED:  { bg: "#1c1700", text: "#facc15", border: "#854d0e" },
+      LOW:  { bg: "#1c0505", text: "#f87171", border: "#991b1b" },
+    };
+
+    const COST_PER_STYLIST = 8000;
+
+    function getBestAllocation(budget) {
+      const sorted = [...MODULES].sort((a, b) => b.revLift - a.revLift);
+      let rem = budget, totalRet = 0, allocs = [];
+      for (const m of sorted) {
+        if (rem <= 0) break;
+        const n = Math.min(Math.floor(rem / COST_PER_STYLIST), m.stylists);
+        if (!n) continue;
+        rem -= n * COST_PER_STYLIST;
+        totalRet += n * m.revLift;
+        allocs.push({ ...m, n, spent: n * COST_PER_STYLIST, ret: n * m.revLift });
+      }
+      return { allocs, totalRet, budgetUsed: budget - rem };
+    }
+
+    /* ─────────────────────────────────────────────
+       SMALL COMPONENTS
+    ───────────────────────────────────────────── */
+    function Pill({ status }) {
+      const c = ROI_CFG[status];
+      return (
+        <span style={{
+          fontSize: 9, fontWeight: 800, letterSpacing: 1.4, padding: "3px 9px",
+          borderRadius: 4, background: c.bg, color: c.text, border: `1px solid ${c.border}`,
+          fontFamily: "var(--mono)"
+        }}>{status} ROI</span>
+      );
+    }
+
+    function StageBadge({ stage }) {
+      const c = STAGE_CFG[stage];
+      return (
+        <span style={{
+          fontSize: 9, fontWeight: 800, letterSpacing: 1, padding: "4px 10px",
+          borderRadius: 4, background: c.bg, color: c.text, border: `1px solid ${c.border}`,
+          fontFamily: "var(--mono)", whiteSpace: "nowrap"
+        }}>{c.label}</span>
+      );
+    }
+
+    function Bar({ value, color, height = 5 }) {
+      return (
+        <div style={{ background: "#1e1e38", borderRadius: 4, height, overflow: "hidden" }}>
+          <div style={{
+            width: `${value}%`, height: "100%", background: color, borderRadius: 4,
+            transition: "width 0.9s cubic-bezier(.4,0,.2,1)"
+          }} />
+        </div>
+      );
+    }
+
+    function Stat({ label, value, color }) {
+      return (
+        <div style={{ background: "#11111f", borderRadius: 8, padding: "9px 12px" }}>
+          <div style={{ fontSize: 9, color: "#555577", fontFamily: "var(--mono)", letterSpacing: 1.4, marginBottom: 4 }}>{label}</div>
+          <div style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 14, color: color || "#e2e8f0" }}>{value}</div>
+        </div>
+      );
+    }
+
+    function BriefBox({ title, code, children }) {
+      return (
+        <div style={{
+          background: "linear-gradient(145deg, #160824, #0c0c1a)",
+          border: "1px solid #3d1060",
+          borderLeft: "3px solid #C2185B",
+          borderRadius: 12, padding: 20,
+          animation: "fadeUp .3s ease forwards"
+        }}>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "#C2185B", letterSpacing: 2.5, marginBottom: 8 }}>
+            ✦ AI BRIEF{code ? ` · ${code}` : ""}
+          </div>
+          {title && (
+            <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 13, color: "#e2e8f0", marginBottom: 10 }}>
+              {title}
+            </div>
+          )}
+          <p style={{ fontSize: 12, lineHeight: 1.8, color: "#b8a6e0", margin: 0 }}>{children}</p>
+        </div>
+      );
+    }
+
+    function EmptyState({ icon, text }) {
+      return (
+        <div style={{
+          background: "#0c0c1a", border: "1px dashed #1e1e38", borderRadius: 12,
+          padding: 32, display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", gap: 10, minHeight: 180
+        }}>
+          <div style={{ fontSize: 26, opacity: 0.5 }}>{icon}</div>
+          <div style={{ fontSize: 11, color: "#555577", textAlign: "center", lineHeight: 1.6 }}>{text}</div>
+        </div>
+      );
+    }
+
+    /* ─────────────────────────────────────────────
+       TABS
+    ───────────────────────────────────────────── */
+    function TrainingTab() {
+      const [sel, setSel] = useState(null);
+
+      const totalReturn = MODULES.reduce((a, m) => a + m.stylists * m.revLift, 0);
+      const highCount = MODULES.filter(m => m.status === "HIGH").length;
+
+      return (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: 20, animation: "fadeUp .35s ease" }}>
+          {/* LEFT: module table */}
+          <div style={{ background: "#0c0c1a", border: "1px solid #1e1e38", borderRadius: 14, overflow: "hidden" }}>
+            <div style={{ padding: "18px 22px", borderBottom: "1px solid #1e1e38", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 14 }}>Training Module ROI</div>
+                <div style={{ fontSize: 11, color: "#555577", marginTop: 3 }}>Click any module for AI investment brief</div>
+              </div>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "#6B2D8B", letterSpacing: 1.5, background: "#1a0a30", padding: "4px 12px", borderRadius: 6, border: "1px solid #3d1060" }}>
+                {MODULES.length} MODULES
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 110px 90px 70px 90px", padding: "9px 22px", borderBottom: "1px solid #1e1e38" }}>
+              {["Module", "Rev Lift / 90d", "Payback", "Trained", "Status"].map(h => (
+                <div key={h} style={{ fontSize: 9, color: "#555577", fontFamily: "var(--mono)", letterSpacing: 1.4 }}>{h}</div>
+              ))}
+            </div>
+
+            {MODULES.map((m, i) => {
+              const active = sel?.id === m.id;
+              return (
+                <div key={m.id}
+                  onClick={() => setSel(active ? null : m)}
+                  style={{
+                    display: "grid", gridTemplateColumns: "1fr 110px 90px 70px 90px",
+                    padding: "14px 22px",
+                    borderBottom: i < MODULES.length - 1 ? "1px solid #1e1e3844" : "none",
+                    background: active ? "#1a0a2e" : i % 2 === 0 ? "#0c0c1a" : "#0e0e20",
+                    cursor: "pointer", transition: "all .18s ease",
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = "#14142a"; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = i % 2 === 0 ? "#0c0c1a" : "#0e0e20"; }}
+                >
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: active ? "#C2185B" : "#e2e8f0" }}>{m.name}</div>
+                    <div style={{ fontSize: 10, color: "#555577", fontFamily: "var(--mono)", marginTop: 2 }}>{m.code} · {m.level}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#4ade80", fontFamily: "var(--display)" }}>₹{m.revLift.toLocaleString("en-IN")}</div>
+                    <div style={{ fontSize: 10, color: "#555577" }}>+{m.pct}% lift</div>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: "#94a3b8", display: "flex", alignItems: "center" }}>{m.payback}d</div>
+                  <div style={{ fontSize: 12.5, color: "#94a3b8", display: "flex", alignItems: "center" }}>{m.stylists}</div>
+                  <div style={{ display: "flex", alignItems: "center" }}><Pill status={m.status} /></div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* RIGHT */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ background: "#0c0c1a", border: "1px solid #1e1e38", borderRadius: 14, padding: 20 }}>
+              <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 13, marginBottom: 14 }}>Portfolio Summary</div>
+              {[
+                { label: "Total projected 90-day return", val: "₹" + (totalReturn / 1e7).toFixed(1) + " Cr", c: "#4ade80" },
+                { label: "Modules delivering HIGH ROI", val: `${highCount} of ${MODULES.length}`, c: "#C2185B" },
+                { label: "Avg payback — HIGH ROI modules", val: "30 days", c: "#facc15" },
+                { label: "Module with zero measurable ROI", val: "MOD-03 (₹800 lift)", c: "#f87171" },
+              ].map(s => (
+                <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid #1e1e3844" }}>
+                  <div style={{ fontSize: 11, color: "#6b7280" }}>{s.label}</div>
+                  <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 13, color: s.c }}>{s.val}</div>
+                </div>
+              ))}
+            </div>
+
+            {sel
+              ? (
+                <div style={{ animation: "fadeUp .3s ease" }}>
+                  <BriefBox title={sel.name} code={sel.code}>{sel.brief}</BriefBox>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+                    <Stat label="REVENUE LIFT" value={"₹" + sel.revLift.toLocaleString("en-IN")} color="#4ade80" />
+                    <Stat label="PAYBACK" value={sel.payback + " days"} color="#facc15" />
+                    <Stat label="STYLISTS TRAINED" value={sel.stylists} />
+                    <Stat label="REVENUE LIFT %" value={"+" + sel.pct + "%"} color="#C2185B" />
+                  </div>
+                </div>
+              )
+              : <EmptyState icon="☝" text="Select a module to see the AI investment brief" />
+            }
+          </div>
+        </div>
+      );
+    }
+
+    function FranchiseTab() {
+      const [sel, setSel] = useState(null);
+
+      const counts = [0, 1, 2, 3].map(s => BRANCHES.filter(b => b.stage === s).length);
+
+      return (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: 20, animation: "fadeUp .35s ease" }}>
+          {/* LEFT: branch cards */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {BRANCHES.map(b => {
+              const st = STAGE_CFG[b.stage];
+              const active = sel?.id === b.id;
+              return (
+                <div key={b.id}
+                  onClick={() => setSel(active ? null : b)}
+                  style={{
+                    background: active ? "#160824" : "#0c0c1a",
+                    border: `1px solid ${active ? "#6B2D8B" : "#1e1e38"}`,
+                    borderRadius: 12, padding: "18px 20px",
+                    cursor: "pointer", transition: "all .2s ease"
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.borderColor = "#3d1060"; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.borderColor = "#1e1e38"; }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+                    <div>
+                      <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 14, color: active ? "#C2185B" : "#e2e8f0" }}>
+                        {b.name} · {b.city}
+                      </div>
+                      <div style={{ fontSize: 10, color: "#555577", fontFamily: "var(--mono)", marginTop: 3, letterSpacing: 1 }}>
+                        {b.region} Zone · {b.stylists} Stylists · {b.l3} L3 Certified
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 24, color: st.bar, lineHeight: 1 }}>{b.score}</div>
+                        <div style={{ fontSize: 8, color: "#555577", fontFamily: "var(--mono)", letterSpacing: 1, marginTop: 2 }}>HEALTH INDEX</div>
+                      </div>
+                      <StageBadge stage={b.stage} />
+                    </div>
+                  </div>
+
+                  <Bar value={b.score} color={st.bar} height={4} />
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginTop: 12 }}>
+                    {[
+                      { label: "Revenue MoM", val: b.rev, c: b.revColor },
+                      { label: "Complaints", val: b.complaints, c: b.cColor },
+                      { label: "Training %", val: b.training + "%", c: b.training >= 75 ? "#4ade80" : b.training >= 50 ? "#facc15" : "#f87171" },
+                      { label: "Audit Score", val: b.audit + "/100", c: b.audit >= 75 ? "#4ade80" : b.audit >= 55 ? "#facc15" : "#f87171" },
+                    ].map(m => (
+                      <div key={m.label} style={{ background: "#11111f", borderRadius: 8, padding: "8px 10px" }}>
+                        <div style={{ fontSize: 9, color: "#555577", fontFamily: "var(--mono)", letterSpacing: 1, marginBottom: 3 }}>{m.label}</div>
+                        <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 13, color: m.c }}>{m.val}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* RIGHT */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ background: "#0c0c1a", border: "1px solid #1e1e38", borderRadius: 14, padding: 20 }}>
+              <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 13, marginBottom: 14 }}>Zone Health Summary</div>
+              {[
+                { label: "Healthy branches", val: counts[0], c: "#4ade80" },
+                { label: "Stage 1 · Early warning", val: counts[1], c: "#facc15" },
+                { label: "Stage 2 · Intervention needed", val: counts[2], c: "#fb923c" },
+                { label: "Stage 3 · Critical", val: counts[3], c: "#f87171" },
+              ].map(s => (
+                <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid #1e1e3844" }}>
+                  <div style={{ fontSize: 11, color: "#6b7280" }}>{s.label}</div>
+                  <div style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 16, color: s.c }}>{s.val}</div>
+                </div>
+              ))}
+            </div>
+
+            {sel
+              ? (
+                <div style={{ animation: "fadeUp .3s ease" }}>
+                  <BriefBox title={`${sel.name} · ${sel.city}`} code={`STAGE ${sel.stage}`}>{sel.brief}</BriefBox>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+                    <Stat label="HEALTH INDEX" value={sel.score + " / 100"} color={STAGE_CFG[sel.stage].bar} />
+                    <Stat label="L3 STYLISTS" value={sel.l3} color={sel.l3 > 0 ? "#4ade80" : "#f87171"} />
+                    <Stat label="TRAINING %" value={sel.training + "%"} color={sel.training >= 75 ? "#4ade80" : "#f87171"} />
+                    <Stat label="AUDIT SCORE" value={sel.audit + " / 100"} color={sel.audit >= 65 ? "#4ade80" : "#f87171"} />
+                  </div>
+                </div>
+              )
+              : <EmptyState icon="🏪" text="Select a branch to see the AI intervention brief" />
+            }
+          </div>
+        </div>
+      );
+    }
+
+    function SimulatorTab() {
+      const [budget, setBudget] = useState(500000);
+      const [ran, setRan] = useState(false);
+      const result = getBestAllocation(budget);
+      const roi = budget > 0 ? ((result.totalRet / budget) * 100).toFixed(0) : 0;
+
+      const simBrief = `With ₹${budget.toLocaleString("en-IN")} allocated optimally across ${result.allocs.length} modules, NaturalsNerve projects ₹${result.totalRet.toLocaleString("en-IN")} in 90-day revenue return — a ${roi}% ROI on training spend. Advanced Colour & Balayage receives first-priority funding at every budget level; any residual budget after MOD-07 saturation should flow to MOD-04 then MOD-09. Modules ranked LOW ROI have been excluded from this allocation entirely — redirect freed budget and do not fund MOD-03 until high-ROI slots are fully saturated.`;
+
+      return (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: 20, animation: "fadeUp .35s ease" }}>
+          {/* LEFT */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ background: "#0c0c1a", border: "1px solid #1e1e38", borderRadius: 14, padding: 24 }}>
+              <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Budget Simulator</div>
+              <div style={{ fontSize: 12, color: "#555577", marginBottom: 24 }}>
+                Set your regional training budget. NaturalsNerve allocates it optimally across modules ranked by ROI.
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600 }}>Training Budget</div>
+                  <div style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 22, color: "#C2185B" }}>
+                    ₹{budget.toLocaleString("en-IN")}
+                  </div>
+                </div>
+                <input
+                  type="range" min={100000} max={2000000} step={50000} value={budget}
+                  onChange={e => { setBudget(+e.target.value); setRan(false); }}
+                  style={{ accentColor: "#6B2D8B" }}
+                />
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+                  <span style={{ fontSize: 10, color: "#555577", fontFamily: "var(--mono)" }}>₹1L</span>
+                  <span style={{ fontSize: 10, color: "#555577", fontFamily: "var(--mono)" }}>₹20L</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setRan(true)}
+                style={{
+                  width: "100%", padding: "14px", borderRadius: 10, border: "none",
+                  background: "linear-gradient(135deg, #6B2D8B, #C2185B)",
+                  color: "#fff", fontFamily: "var(--display)", fontWeight: 700, fontSize: 13,
+                  cursor: "pointer", letterSpacing: 0.3, transition: "opacity .2s"
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = ".88"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+              >
+                Run Optimal Allocation →
+              </button>
+            </div>
+
+            {ran && (
+              <div style={{ background: "#0c0c1a", border: "1px solid #1e1e38", borderRadius: 14, overflow: "hidden", animation: "fadeUp .3s ease" }}>
+                <div style={{ padding: "16px 22px", borderBottom: "1px solid #1e1e38", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 13 }}>Optimal Allocation</div>
+                  <div style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 15, color: "#4ade80" }}>
+                    ₹{result.totalRet.toLocaleString("en-IN")} projected
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 60px 100px 110px", padding: "9px 22px", borderBottom: "1px solid #1e1e38" }}>
+                  {["Module", "ROI", "Budget Used", "90d Return"].map(h => (
+                    <div key={h} style={{ fontSize: 9, color: "#555577", fontFamily: "var(--mono)", letterSpacing: 1.4 }}>{h}</div>
+                  ))}
+                </div>
+                {result.allocs.map((a, i) => (
+                  <div key={a.id} style={{
+                    display: "grid", gridTemplateColumns: "1fr 60px 100px 110px",
+                    padding: "13px 22px",
+                    borderBottom: i < result.allocs.length - 1 ? "1px solid #1e1e3830" : "none",
+                    background: i % 2 === 0 ? "#0c0c1a" : "#0e0e20"
+                  }}>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600 }}>{a.name}</div>
+                      <div style={{ fontSize: 10, color: "#555577", fontFamily: "var(--mono)", marginTop: 2 }}>{a.n} stylists</div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center" }}><Pill status={a.status} /></div>
+                    <div style={{ fontSize: 11, color: "#6b7280", display: "flex", alignItems: "center" }}>₹{a.spent.toLocaleString("en-IN")}</div>
+                    <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 13, color: "#4ade80", display: "flex", alignItems: "center" }}>
+                      +₹{a.ret.toLocaleString("en-IN")}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ background: "#0c0c1a", border: "1px solid #1e1e38", borderRadius: 14, padding: 20 }}>
+              <div style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 13, marginBottom: 14 }}>Simulation Parameters</div>
+              {[
+                { label: "Cost per stylist training", val: "₹8,000" },
+                { label: "Return modelled over", val: "90 days" },
+                { label: "Allocation strategy", val: "ROI-ranked greedy" },
+                { label: "Modules in pool", val: MODULES.length },
+                { label: "LOW ROI modules excluded", val: "1 (MOD-03)" },
+              ].map(s => (
+                <div key={s.label} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: "1px solid #1e1e3844" }}>
+                  <div style={{ fontSize: 11, color: "#6b7280" }}>{s.label}</div>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "#e2e8f0" }}>{s.val}</div>
+                </div>
+              ))}
+            </div>
+
+            {ran && (
+              <div style={{ animation: "fadeUp .3s ease" }}>
+                <BriefBox title="Strategy Brief">{simBrief}</BriefBox>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+                  <Stat label="PROJECTED RETURN" value={"₹" + result.totalRet.toLocaleString("en-IN")} color="#4ade80" />
+                  <Stat label="ROI ON SPEND" value={roi + "%"} color="#C2185B" />
+                  <Stat label="STYLISTS REACHED" value={result.allocs.reduce((a, b) => a + b.n, 0)} />
+                  <Stat label="MODULES FUNDED" value={result.allocs.length + " of " + MODULES.length} />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    /* ─────────────────────────────────────────────
+       ROOT APP
+    ───────────────────────────────────────────── */
+    function NaturalsNerve() {
+      const [tab, setTab] = useState("training");
+
+      const TABS = [
+        { id: "training",  label: "Training ROI Intelligence" },
+        { id: "franchise", label: "Franchise Health" },
+        { id: "simulator", label: "Budget Simulator" },
+      ];
+
+      const atRisk = BRANCHES.filter(b => b.stage >= 1).length;
+      const critical = BRANCHES.filter(b => b.stage === 3).length;
+
+      return (
+        <div style={{
+          minHeight: "100vh",
+          background: "#07070f",
+          fontFamily: "var(--body)",
+          color: "#e2e8f0",
+          backgroundImage: "radial-gradient(ellipse 60% 50% at 15% 10%, #1a0a2e44 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 85% 90%, #0a1a0e22 0%, transparent 70%)"
+        }}>
+          {/* ── HEADER ── */}
+          <div style={{
+            background: "#0a0a18", borderBottom: "1px solid #1e1e38",
+            padding: "0 28px", height: 62,
+            display: "flex", alignItems: "center", justifyContent: "space-between"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 9,
+                background: "linear-gradient(135deg, #6B2D8B, #C2185B)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontFamily: "var(--display)", fontWeight: 800, fontSize: 18,
+                animation: "glowPulse 3s ease infinite", flexShrink: 0
+              }}>N</div>
+              <div>
+                <div style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 15, letterSpacing: -0.3 }}>
+                  NaturalsNerve
+                </div>
+                <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "#555577", letterSpacing: 1.8 }}>
+                  SALON INTELLIGENCE SYSTEM
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              {[
+                { val: BRANCHES.length,     label: "Branches",  c: null },
+                { val: atRisk,              label: "At Risk",   c: "#fb923c" },
+                { val: critical,            label: "Critical",  c: "#f87171" },
+                { val: MODULES.filter(m=>m.status==="HIGH").length, label: "High ROI", c: "#C2185B" },
+              ].map(k => (
+                <div key={k.label} style={{
+                  background: "#0e0e1c", border: "1px solid #1e1e38",
+                  borderRadius: 8, padding: "5px 14px", textAlign: "center"
+                }}>
+                  <div style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 16, color: k.c || "#e2e8f0" }}>{k.val}</div>
+                  <div style={{ fontSize: 9, color: "#555577", fontFamily: "var(--mono)", letterSpacing: 1 }}>{k.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── TABS ── */}
+          <div style={{ background: "#0a0a18", borderBottom: "1px solid #1e1e38", padding: "0 28px", display: "flex" }}>
+            {TABS.map(t => (
+              <button key={t.id}
+                onClick={() => setTab(t.id)}
+                style={{
+                  padding: "15px 22px", fontSize: 12.5, fontWeight: 600,
+                  fontFamily: "var(--body)", letterSpacing: 0.2, border: "none",
+                  background: "none", cursor: "pointer",
+                  color: tab === t.id ? "#C2185B" : "#555577",
+                  borderBottom: tab === t.id ? "2px solid #C2185B" : "2px solid transparent",
+                  marginBottom: -1, transition: "all .2s ease"
+                }}
+              >{t.label}</button>
+            ))}
+          </div>
+
+          {/* ── CONTENT ── */}
+          <div style={{ maxWidth: 1180, margin: "0 auto", padding: "26px 28px" }}>
+            {tab === "training"  && <TrainingTab />}
+            {tab === "franchise" && <FranchiseTab />}
+            {tab === "simulator" && <SimulatorTab />}
+          </div>
+
+          {/* ── FOOTER ── */}
+          <div style={{
+            borderTop: "1px solid #1e1e38", padding: "14px 28px",
+            display: "flex", justifyContent: "space-between", alignItems: "center"
+          }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "#333355", letterSpacing: 1.5 }}>
+              NATURALSNERVE · NATURALS BEAUTY TECH HACKATHON 2026 · STARTUPTN
+            </div>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "#3d1060", letterSpacing: 1 }}>
+              CHALLENGE 6 · SALON DATA INTELLIGENCE
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<NaturalsNerve />);
+  </script>
+</body>
+</html>
